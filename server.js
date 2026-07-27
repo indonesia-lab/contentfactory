@@ -12,7 +12,9 @@ app.use(cors()); // Allow all origins — Scanner can call this proxy freely
 app.use(express.json());
 
 // Health check
-app.get('/', (req, res) => {
+app.use(express.static(__dirname));
+
+app.get('/health', (req, res) => {
   res.json({ status: 'ok', service: 'Higgsfield Proxy' });
 });
 
