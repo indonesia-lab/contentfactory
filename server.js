@@ -4,33 +4,50 @@ const cors = require('cors');
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-// Your Higgsfield credentials — set these as environment variables in Railway
 const HF_KEY = process.env.HF_KEY;
 const HF_SECRET = process.env.HF_SECRET;
+const ANTHROPIC_KEY = process.env.ANTHROPIC_KEY;
 
-app.use(cors()); // Allow all origins — Scanner can call this proxy freely
-app.use(express.json());
-
-// Health check
+app.use(cors());
+app.use(express.json({ limit: '10mb' }));
 app.use(express.static(__dirname));
 
+// Health check
 app.get('/health', (req, res) => {
-  res.json({ status: 'ok', service: 'Higgsfield Proxy' });
+  res.json({ status: 'ok', service: 'Content Factory Proxy' });
 });
 
-// Generate video — POST /generate
-// Body: { model, prompt, duration, aspect_ratio }
+// Claude API proxy — POST /claude
+app.post('/claude', async (req, res) => {
+  if (!ANTHROPIC_KEY) {
+    return res.status(500).json({ error: 'ANTHROPIC_KEY env var not set' });
+  }
+  try {
+    const response = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'x-api-key': ANTHROPIC_KEY,
+        'anthropic-version': '2023-06-01',
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(req.body)
+    });
+    const data = await response.json();
+    res.status(response.status).json(data);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Higgsfield generate — POST /generate
 app.post('/generate', async (req, res) => {
   const { model, prompt, duration, aspect_ratio } = req.body;
-
   if (!model || !prompt) {
     return res.status(400).json({ error: 'model and prompt are required' });
   }
-
   if (!HF_KEY || !HF_SECRET) {
     return res.status(500).json({ error: 'HF_KEY and HF_SECRET env vars not set' });
   }
-
   try {
     const response = await fetch(`https://platform.higgsfield.ai/${model}`, {
       method: 'POST',
@@ -41,7 +58,6 @@ app.post('/generate', async (req, res) => {
       },
       body: JSON.stringify({ prompt, duration: duration || 5, aspect_ratio: aspect_ratio || '9:16' })
     });
-
     const data = await response.json();
     res.status(response.status).json(data);
   } catch (err) {
@@ -49,15 +65,13 @@ app.post('/generate', async (req, res) => {
   }
 });
 
-// Check job status — GET /status/:requestId
+// Higgsfield status — GET /status/:requestId
 app.get('/status/:requestId', async (req, res) => {
   const { requestId } = req.params;
-
   try {
     const response = await fetch(`https://platform.higgsfield.ai/request/${requestId}`, {
       headers: { 'Authorization': `Key ${HF_KEY}:${HF_SECRET}` }
     });
-
     const data = await response.json();
     res.status(response.status).json(data);
   } catch (err) {
@@ -66,5 +80,5 @@ app.get('/status/:requestId', async (req, res) => {
 });
 
 app.listen(PORT, () => {
-  console.log(`Higgsfield Proxy running on port ${PORT}`);
+  console.log(`Content Factory Proxy running on port ${PORT}`);
 });
