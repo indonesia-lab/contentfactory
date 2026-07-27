@@ -11,6 +11,9 @@ const ANTHROPIC_KEY = process.env.ANTHROPIC_KEY;
 app.use(cors());
 app.use(express.json({ limit: '10mb' }));
 app.use(express.static(__dirname));
+app.get('/', (req, res) => {
+  res.sendFile(__dirname + '/sports_content_scanner_v3.html');
+});
 
 // Health check
 app.get('/health', (req, res) => {
