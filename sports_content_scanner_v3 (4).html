@@ -1,0 +1,669 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Sports Content Scanner v3</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:#07090f;color:#dde8f0;font-family:'Inter',system-ui,sans-serif;min-height:100vh}
+.hdr{background:#0b0f1a;border-bottom:1px solid #151f30;padding:14px 20px;display:flex;align-items:center;gap:12px}
+.hdr-logo{width:36px;height:36px;background:#d4a017;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:17px;flex-shrink:0}
+.hdr-title{font-size:15px;font-weight:800;color:#fff;letter-spacing:-.3px}
+.hdr-sub{font-size:11px;color:#3a5a7a;margin-top:1px}
+.hdr-right{margin-left:auto;display:flex;align-items:center;gap:8px}
+.dot{width:7px;height:7px;border-radius:50%;background:#2a3a2a}
+.dot.live{background:#4adb6a;box-shadow:0 0 6px #4adb6a88;animation:pulse 2s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+.status-txt{font-size:11px;color:#3a5a7a}
+
+/* CONFIG BAR */
+.cfg-bar{background:#0a0e1a;border-bottom:1px solid #111a28;padding:10px 20px;display:flex;flex-direction:column;gap:8px}
+.cfg-row{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.cfg-label{font-size:10px;font-weight:700;color:#3a5a7a;text-transform:uppercase;letter-spacing:.8px;white-space:nowrap;min-width:80px}
+.cfg-input{background:#07090f;border:1px solid #182030;border-radius:6px;color:#c0d0e0;font-size:12px;padding:6px 10px;font-family:monospace;outline:none;flex:1;min-width:180px;max-width:320px}
+.cfg-input:focus{border-color:#d4a01755}
+.cfg-input::placeholder{color:#2a3a4a}
+.cfg-input.url-input{max-width:420px;color:#6ababb}
+.cfg-save{background:#d4a017;color:#07090f;font-weight:800;font-size:11px;border:none;border-radius:6px;padding:6px 14px;cursor:pointer;white-space:nowrap}
+.cfg-save:hover{opacity:.85}
+.cfg-badge{font-size:11px;padding:4px 10px;border-radius:5px;display:none}
+.cfg-badge.ok{background:#0d2010;color:#4adb6a;border:1px solid #1a4020;display:inline-block}
+.cfg-badge.err{background:#1a0808;color:#cc5050;border:1px solid #3a1010;display:inline-block}
+.cfg-divider{width:1px;height:20px;background:#182030;margin:0 4px}
+.cfg-hint{font-size:10px;color:#2a4a5a;margin-top:2px}
+
+/* LAYOUT */
+.wrap{display:grid;grid-template-columns:230px 1fr;min-height:calc(100vh - 120px)}
+.sidebar{background:#090c16;border-right:1px solid #111a28;padding:14px 11px;display:flex;flex-direction:column;gap:13px}
+.sl{font-size:10px;font-weight:700;letter-spacing:1.2px;color:#2a4a6a;text-transform:uppercase;margin-bottom:5px}
+.sport-grid{display:grid;grid-template-columns:1fr 1fr;gap:5px}
+.sport-btn{background:#0f1520;border:1px solid #182030;border-radius:7px;padding:6px 4px;cursor:pointer;text-align:center;transition:all .15s}
+.sport-btn:hover{border-color:#d4a01744}
+.sport-btn.active{border-color:#d4a017;background:#131810}
+.sport-btn .icon{font-size:15px;display:block;margin-bottom:2px}
+.sport-btn .name{font-size:9px;font-weight:700;color:#4a6a8a;letter-spacing:.3px;text-transform:uppercase}
+.sport-btn.active .name{color:#d4a017}
+.cat-list{display:flex;flex-direction:column;gap:4px}
+.cat-btn{background:#0f1520;border:1px solid #182030;border-radius:6px;padding:6px 8px;cursor:pointer;display:flex;align-items:center;gap:7px;transition:all .15s}
+.cat-btn:hover{border-color:#d4a01744}
+.cat-btn.active{border-color:#d4a017;background:#131810}
+.cat-btn .ci{font-size:12px;width:17px;text-align:center;flex-shrink:0}
+.cat-btn .cl{font-size:11px;font-weight:600;color:#5a7a8a}
+.cat-btn.active .cl{color:#d4a017}
+.geo-row{display:flex;gap:4px}
+.geo-btn{flex:1;background:#0f1520;border:1px solid #182030;border-radius:6px;padding:5px 3px;cursor:pointer;text-align:center;font-size:10px;font-weight:700;color:#4a6a8a;transition:all .15s}
+.geo-btn.active{border-color:#d4a017;color:#d4a017;background:#131810}
+.scan-btn{background:#d4a017;color:#07090f;font-weight:900;font-size:12px;border:none;border-radius:8px;padding:10px;cursor:pointer;width:100%;transition:opacity .15s;display:flex;align-items:center;justify-content:center;gap:7px;margin-top:auto}
+.scan-btn:hover{opacity:.88}
+.scan-btn:disabled{opacity:.35;cursor:not-allowed}
+
+.main{display:flex;flex-direction:column;overflow:hidden}
+.phases{display:flex;border-bottom:1px solid #111a28;background:#090c16}
+.phase{flex:1;padding:8px 4px;text-align:center;font-size:9px;font-weight:700;color:#1a3050;letter-spacing:.6px;text-transform:uppercase;border-bottom:2px solid transparent;transition:all .2s}
+.phase.active{color:#d4a017;border-bottom-color:#d4a017}
+.phase.done{color:#4adb6a;border-bottom-color:#4adb6a44}
+.phase-num{display:block;font-size:13px;font-weight:900;margin-bottom:1px;color:inherit}
+.content{flex:1;overflow-y:auto;padding:16px}
+
+.empty{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:280px;gap:10px;color:#1a3050}
+.empty-icon{font-size:44px}
+.empty-title{font-size:14px;font-weight:700;color:#2a4a6a}
+.empty-sub{font-size:12px;color:#1a3050;text-align:center;max-width:280px;line-height:1.6}
+
+.phase-log{display:flex;flex-direction:column;gap:8px;max-width:460px;margin:28px auto}
+.log-item{display:flex;align-items:center;gap:10px;padding:9px 12px;background:#0d1220;border:1px solid #182030;border-radius:8px;transition:all .3s}
+.log-item.active{border-color:#d4a01755;background:#131810}
+.log-item.done{border-color:#4adb6a33;background:#0d1810}
+.log-icon{font-size:13px;width:18px;text-align:center;flex-shrink:0}
+.log-text{font-size:11px;color:#5a7a8a;font-weight:600}
+.log-item.active .log-text{color:#d4a017}
+.log-item.done .log-text{color:#4adb6a}
+.log-spin{width:13px;height:13px;border:2px solid #2a3a4a;border-top-color:#d4a017;border-radius:50%;animation:spin .6s linear infinite;margin-left:auto;flex-shrink:0}
+.log-check{margin-left:auto;color:#4adb6a;font-size:12px}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+.section-hd{font-size:10px;font-weight:700;color:#2a4a6a;text-transform:uppercase;letter-spacing:1.2px;margin-bottom:9px}
+.events-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:14px}
+.event-card{background:#0d1220;border:1px solid #182030;border-radius:9px;padding:12px;cursor:pointer;transition:all .15s;position:relative}
+.event-card:hover{border-color:#d4a01755}
+.event-card.picked{border-color:#d4a017;background:#131810}
+.ev-rank{position:absolute;top:8px;right:8px;font-size:9px;font-weight:900;color:#d4a017;background:#1a1a08;border:1px solid #d4a01733;border-radius:3px;padding:2px 5px}
+.ev-cat{font-size:9px;font-weight:700;color:#d4a017;letter-spacing:.8px;text-transform:uppercase;margin-bottom:4px}
+.ev-title{font-size:12px;font-weight:700;color:#dde8f0;line-height:1.4;margin-bottom:4px;padding-right:26px}
+.ev-meta{font-size:11px;color:#2a4a6a;line-height:1.5}
+.ev-score{display:flex;align-items:center;gap:5px;margin-top:6px}
+.ev-bar{flex:1;height:3px;background:#182030;border-radius:2px}
+.ev-fill{height:3px;border-radius:2px;background:#d4a017}
+.ev-num{font-size:10px;font-weight:800;color:#d4a017;width:22px;text-align:right}
+.gen-btn{background:#d4a017;color:#07090f;font-weight:900;font-size:12px;border:none;border-radius:7px;padding:9px 18px;cursor:pointer;display:flex;align-items:center;gap:7px;transition:opacity .15s;margin-bottom:14px}
+.gen-btn:hover{opacity:.88}
+.gen-btn:disabled{opacity:.35;cursor:not-allowed}
+
+.out-wrap{border:1px solid #182030;border-radius:10px;overflow:hidden}
+.out-tabs{display:flex;border-bottom:1px solid #111a28;overflow-x:auto;background:#090c16}
+.otab{padding:8px 13px;font-size:11px;font-weight:700;color:#2a4060;cursor:pointer;border-bottom:2px solid transparent;white-space:nowrap;letter-spacing:.3px;transition:color .15s}
+.otab:hover{color:#5a7a8a}
+.otab.active{color:#d4a017;border-bottom-color:#d4a017}
+.out-panel{display:none;padding:14px}
+.out-panel.active{display:block}
+
+.sc-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:9px}
+.sc-card{background:#0d1220;border:1px solid #182030;border-radius:7px;padding:10px}
+.sc-lbl{font-size:9px;font-weight:700;color:#2a4a6a;text-transform:uppercase;letter-spacing:.8px;margin-bottom:4px}
+.sc-bar-bg{background:#182030;border-radius:3px;height:4px;margin-bottom:4px}
+.sc-bar{height:4px;border-radius:3px;background:#d4a017;transition:width .8s ease}
+.sc-num{font-size:22px;font-weight:900;color:#d4a017}
+.pri-badge{display:inline-block;padding:3px 11px;border-radius:20px;font-size:11px;font-weight:800;letter-spacing:.5px;margin-bottom:8px}
+.pri-IMMEDIATE{background:#0d2010;color:#4adb6a;border:1px solid #1a4020}
+.pri-BATCH{background:#1a1a08;color:#d4a017;border:1px solid #3a3a10}
+.pri-DEPRIORITIZE{background:#1a0808;color:#cc5050;border:1px solid #3a1010}
+.rbox{background:#0d1220;border:1px solid #182030;border-radius:7px;padding:10px;font-size:12px;color:#7a9ab0;line-height:1.7}
+.hook-card{background:#0d1220;border-left:3px solid #d4a017;border-radius:0 7px 7px 0;padding:10px 12px;margin-bottom:8px}
+.hook-lang{font-size:9px;font-weight:700;color:#d4a017;margin-bottom:3px;letter-spacing:.8px}
+.hook-text{font-size:15px;font-weight:800;color:#fff;line-height:1.3}
+.vo-card{background:#0d1220;border:1px solid #182030;border-radius:7px;padding:10px 12px;margin-bottom:6px}
+.vo-lang{font-size:9px;font-weight:700;color:#4a8aaa;margin-bottom:4px;letter-spacing:.8px}
+.vo-text{font-size:12px;color:#9ab8cc;line-height:1.7}
+.caps-row{display:flex;gap:5px;flex-wrap:wrap;margin-bottom:10px}
+.cap-pill{background:#131e2e;border:1px solid #1e2e44;border-radius:5px;padding:4px 9px;font-size:10px;font-weight:900;color:#ddeeff;letter-spacing:1px}
+.cta-grid{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+.cta-card{background:#0b1828;border:1px solid #182a3a;border-radius:7px;padding:9px 10px}
+.cta-lang{font-size:9px;font-weight:700;color:#4a8aaa;margin-bottom:3px;letter-spacing:.8px}
+.cta-text{font-size:12px;color:#7aaabb;line-height:1.5}
+.subhd{font-size:10px;font-weight:700;color:#2a4a6a;text-transform:uppercase;letter-spacing:.8px;margin:12px 0 7px}
+
+/* SCENES */
+.scene-card{background:#0d1220;border:1px solid #182030;border-radius:8px;padding:10px 12px;margin-bottom:8px}
+.sc-hdr{display:flex;align-items:center;gap:8px;margin-bottom:6px}
+.sc-idx{width:22px;height:22px;background:#d4a01722;border:1px solid #d4a01744;border-radius:50%;font-size:10px;font-weight:900;color:#d4a017;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.sc-name{font-size:11px;font-weight:800;color:#dde8f0;text-transform:uppercase;letter-spacing:.5px}
+.sc-tc{margin-left:auto;font-size:10px;color:#2a4a6a}
+.sc-meta{display:flex;gap:5px;flex-wrap:wrap;margin-bottom:6px}
+.meta-tag{background:#0b1220;border:1px solid #182030;border-radius:3px;padding:2px 6px;font-size:10px;font-weight:600;color:#3a6a8a}
+.sc-cap{background:#0b1828;border:1px solid #182a3a;border-radius:4px;padding:3px 8px;font-size:10px;font-weight:900;color:#ddeeff;letter-spacing:1px;margin-bottom:5px;display:inline-block}
+.sc-prompt{font-size:11px;color:#5a8090;line-height:1.65}
+
+/* HIGGSFIELD PANEL */
+.hf-panel{background:#080e18;border:1px solid #1a2a3a;border-radius:9px;padding:14px;margin-top:14px}
+.hf-title{font-size:12px;font-weight:800;color:#5ababb;margin-bottom:12px;display:flex;align-items:center;gap:7px;letter-spacing:.3px}
+.hf-row{display:flex;gap:7px;align-items:center;margin-bottom:10px;flex-wrap:wrap}
+.hf-lbl{font-size:10px;font-weight:700;color:#3a5a6a;text-transform:uppercase;letter-spacing:.8px;white-space:nowrap}
+select.hf-sel{background:#07090f;border:1px solid #1a2a3a;border-radius:6px;color:#9ab8cc;font-size:11px;padding:6px 8px;outline:none;font-family:inherit;flex:1;min-width:190px}
+select.hf-sel:focus{border-color:#d4a01755}
+.hf-scene-list{display:flex;flex-direction:column;gap:5px;margin-bottom:12px}
+.hf-scene-row{display:flex;align-items:center;gap:8px;padding:7px 10px;background:#0d1520;border:1px solid #182030;border-radius:6px;cursor:pointer;transition:border-color .15s}
+.hf-scene-row:hover{border-color:#d4a01733}
+.hf-scene-row.sel{border-color:#d4a01755;background:#111820}
+.hf-check{width:15px;height:15px;accent-color:#d4a017;cursor:pointer;flex-shrink:0}
+.hf-scene-lbl{font-size:11px;font-weight:600;color:#5a8a9a;flex:1}
+.hf-scene-tc{font-size:10px;color:#2a4a5a;font-variant-numeric:tabular-nums}
+.hf-send-btn{background:#d4a017;color:#07090f;font-weight:900;font-size:12px;border:none;border-radius:7px;padding:10px 16px;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:7px;transition:opacity .15s;width:100%}
+.hf-send-btn:hover{opacity:.88}
+.hf-send-btn:disabled{opacity:.35;cursor:not-allowed}
+
+/* JOB ROWS */
+.job-list{display:flex;flex-direction:column;gap:6px;margin-top:12px}
+.job-row{display:flex;align-items:center;gap:10px;padding:8px 11px;background:#0d1520;border:1px solid #182030;border-radius:7px}
+.job-scene{font-size:11px;font-weight:700;color:#5a7a9a;min-width:55px}
+.job-stat{font-size:11px;font-weight:600;flex:1}
+.job-stat.q{color:#5a7a9a}.job-stat.p{color:#d4a017}.job-stat.ok{color:#4adb6a}.job-stat.fail{color:#cc5050}
+.job-link{font-size:11px;color:#4a9aaa;text-decoration:none;font-weight:600}
+.job-link:hover{color:#6ababb}
+.jspin{width:11px;height:11px;border:2px solid #2a3a4a;border-top-color:#d4a017;border-radius:50%;animation:spin .6s linear infinite;flex-shrink:0}
+
+/* CORS NOTE */
+.cors-note{background:#131008;border:1px solid #2a2010;border-radius:8px;padding:13px;margin-top:12px;font-size:12px;color:#8a7040;line-height:1.8}
+.cors-note strong{color:#d4a017;display:block;margin-bottom:5px}
+.cors-note code{background:#0a0808;border:1px solid #2a1a10;border-radius:3px;padding:1px 5px;font-family:monospace;font-size:11px;color:#c09060}
+
+/* SOCIAL */
+.plat-hd{font-size:10px;font-weight:700;color:#2a4a6a;text-transform:uppercase;letter-spacing:.8px;margin-bottom:6px}
+.soc-grid{display:grid;grid-template-columns:1fr 1fr;gap:7px;margin-bottom:13px}
+.soc-card{background:#0d1220;border:1px solid #182030;border-radius:7px;padding:10px}
+.soc-lang{font-size:9px;font-weight:700;color:#4a8aaa;margin-bottom:4px;letter-spacing:.8px}
+.soc-text{font-size:11px;color:#7aaabb;line-height:1.65;white-space:pre-wrap}
+
+/* PROD */
+.prod-table{background:#0d1220;border:1px solid #182030;border-radius:7px;overflow:hidden;margin-bottom:9px}
+.prod-row{display:flex;justify-content:space-between;align-items:center;padding:8px 11px;border-bottom:1px solid #111a28}
+.prod-row:last-child{border-bottom:none}
+.prod-k{font-size:11px;color:#3a5a7a;font-weight:600}
+.prod-v{font-size:11px;color:#b0c8d8;font-weight:600}
+.notes-card{background:#13120a;border:1px solid #2a2810;border-radius:7px;padding:10px;margin-bottom:8px}
+.notes-lbl{font-size:9px;font-weight:700;color:#7a7830;text-transform:uppercase;letter-spacing:.8px;margin-bottom:4px}
+.notes-txt{font-size:11px;color:#8a9050;line-height:1.65}
+.tags-row{display:flex;gap:5px;flex-wrap:wrap}
+.tag{background:#0d1a0d;border:1px solid #1a2a1a;border-radius:3px;padding:2px 7px;font-size:10px;color:#5aaa5a}
+
+/* JSON */
+.json-wrap{background:#050810;border-radius:7px;padding:11px;overflow:auto;max-height:460px}
+.json-out{font-family:'SF Mono','Consolas',monospace;font-size:10px;color:#4a8aaa;line-height:1.65;white-space:pre}
+.copy-btn{background:#182030;border:1px solid #1e2a3a;color:#5a8aaa;font-size:11px;font-weight:700;padding:4px 10px;border-radius:5px;cursor:pointer;margin-bottom:8px}
+.copy-btn:hover{background:#1e2a3a}
+</style>
+</head>
+<body>
+
+<div class="hdr">
+  <div class="hdr-logo">📡</div>
+  <div>
+    <div class="hdr-title">Sports Content Scanner v3</div>
+    <div class="hdr-sub">Scan → Score → Package → Higgsfield</div>
+  </div>
+  <div class="hdr-right">
+    <div class="dot live" id="statusDot"></div>
+    <span class="status-txt" id="statusText">Ready</span>
+  </div>
+</div>
+
+<!-- CONFIG BAR -->
+<div class="cfg-bar">
+  <div class="cfg-row">
+    <span class="cfg-label">HF API Key</span>
+    <input class="cfg-input" id="hfKey" type="password" placeholder="6de0a619-xxxx-xxxx-xxxx-xxxxxxxxxxxx">
+    <div class="cfg-divider"></div>
+    <span class="cfg-label">HF Secret</span>
+    <input class="cfg-input" id="hfSecret" type="password" placeholder="your-api-secret">
+  </div>
+  <div class="cfg-row">
+    <span class="cfg-label">Proxy URL</span>
+    <input class="cfg-input url-input" id="proxyUrl" type="text" placeholder="https://your-proxy.up.railway.app  (deploy proxy first — see instructions)">
+    <button class="cfg-save" onclick="saveConfig()">Save</button>
+    <span class="cfg-badge" id="cfgBadge"></span>
+  </div>
+  <div class="cfg-hint">Keys stay in browser memory only · Proxy URL needed to bypass CORS · <a href="#" onclick="showProxyHelp();return false;" style="color:#d4a017;text-decoration:none">How to deploy proxy →</a></div>
+</div>
+
+<div class="wrap">
+  <div class="sidebar">
+    <div>
+      <div class="sl">Sport</div>
+      <div class="sport-grid">
+        <button class="sport-btn active" data-sport="Football" onclick="setSport(this)"><span class="icon">⚽</span><span class="name">Football</span></button>
+        <button class="sport-btn" data-sport="Basketball" onclick="setSport(this)"><span class="icon">🏀</span><span class="name">Basketball</span></button>
+        <button class="sport-btn" data-sport="MMA" onclick="setSport(this)"><span class="icon">🥊</span><span class="name">MMA</span></button>
+        <button class="sport-btn" data-sport="Cricket" onclick="setSport(this)"><span class="icon">🏏</span><span class="name">Cricket</span></button>
+        <button class="sport-btn" data-sport="Tennis" onclick="setSport(this)"><span class="icon">🎾</span><span class="name">Tennis</span></button>
+        <button class="sport-btn" data-sport="F1" onclick="setSport(this)"><span class="icon">🏎️</span><span class="name">F1</span></button>
+      </div>
+    </div>
+    <div>
+      <div class="sl">Category</div>
+      <div class="cat-list">
+        <button class="cat-btn active" data-cat="viral_moment" onclick="setCat(this)"><span class="ci">🔥</span><span class="cl">Viral Moment</span></button>
+        <button class="cat-btn" data-cat="breaking_news" onclick="setCat(this)"><span class="ci">⚡</span><span class="cl">Breaking News</span></button>
+        <button class="cat-btn" data-cat="match_highlights" onclick="setCat(this)"><span class="ci">🎬</span><span class="cl">Match Highlights</span></button>
+        <button class="cat-btn" data-cat="emotional_story" onclick="setCat(this)"><span class="ci">💙</span><span class="cl">Emotional Story</span></button>
+        <button class="cat-btn" data-cat="historical_record" onclick="setCat(this)"><span class="ci">🏆</span><span class="cl">Historical Record</span></button>
+        <button class="cat-btn" data-cat="meme" onclick="setCat(this)"><span class="ci">😂</span><span class="cl">Meme</span></button>
+        <button class="cat-btn" data-cat="prediction" onclick="setCat(this)"><span class="ci">🔮</span><span class="cl">Prediction</span></button>
+        <button class="cat-btn" data-cat="trending" onclick="setCat(this)"><span class="ci">📈</span><span class="cl">Trending</span></button>
+      </div>
+    </div>
+    <div>
+      <div class="sl">Geo</div>
+      <div class="geo-row">
+        <button class="geo-btn" data-geo="Indonesia" onclick="setGeo(this)">🇮🇩 ID</button>
+        <button class="geo-btn active" data-geo="Both" onclick="setGeo(this)">🌍 Both</button>
+        <button class="geo-btn" data-geo="Global" onclick="setGeo(this)">🌐 GL</button>
+      </div>
+    </div>
+    <button class="scan-btn" id="scanBtn" onclick="startScan()">📡 Scan Top Content</button>
+  </div>
+
+  <div class="main">
+    <div class="phases">
+      <div class="phase" id="ph1"><span class="phase-num">1</span>Scan</div>
+      <div class="phase" id="ph2"><span class="phase-num">2</span>Events</div>
+      <div class="phase" id="ph3"><span class="phase-num">3</span>Package</div>
+      <div class="phase" id="ph4"><span class="phase-num">4</span>Higgsfield</div>
+    </div>
+    <div class="content" id="mainContent">
+      <div class="empty">
+        <div class="empty-icon">📡</div>
+        <div class="empty-title">Ready to scan</div>
+        <div class="empty-sub">Configure Higgsfield keys above → pick sport + category → Scan</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- PROXY HELP MODAL -->
+<div id="proxyModal" style="display:none;position:fixed;inset:0;background:#000000cc;z-index:1000;overflow-y:auto;padding:30px 20px">
+  <div style="max-width:640px;margin:0 auto;background:#0b0f1a;border:1px solid #1a2a3a;border-radius:12px;padding:24px">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px">
+      <div style="font-size:16px;font-weight:800;color:#fff">🚀 How to deploy the Higgsfield Proxy</div>
+      <button onclick="document.getElementById('proxyModal').style.display='none'" style="background:none;border:none;color:#5a7a8a;font-size:20px;cursor:pointer">✕</button>
+    </div>
+    <div style="font-size:13px;color:#8aaabb;line-height:1.9">
+
+      <div style="background:#0d1520;border:1px solid #1a2a3a;border-radius:8px;padding:14px;margin-bottom:16px">
+        <div style="font-size:11px;font-weight:800;color:#d4a017;margin-bottom:8px">STEP 1 — GitHub (2 min)</div>
+        1. Go to <a href="https://github.com/new" target="_blank" style="color:#4a9aaa">github.com/new</a><br>
+        2. Create repo named <code style="background:#050810;padding:1px 5px;border-radius:3px;color:#6ababb">higgsfield-proxy</code><br>
+        3. Upload the 3 files from the proxy package:<br>
+        &nbsp;&nbsp;→ <code style="background:#050810;padding:1px 5px;border-radius:3px;color:#6ababb">server.js</code> &nbsp;
+        <code style="background:#050810;padding:1px 5px;border-radius:3px;color:#6ababb">package.json</code> &nbsp;
+        <code style="background:#050810;padding:1px 5px;border-radius:3px;color:#6ababb">railway.json</code>
+      </div>
+
+      <div style="background:#0d1520;border:1px solid #1a2a3a;border-radius:8px;padding:14px;margin-bottom:16px">
+        <div style="font-size:11px;font-weight:800;color:#d4a017;margin-bottom:8px">STEP 2 — Railway (3 min)</div>
+        1. Go to <a href="https://railway.app" target="_blank" style="color:#4a9aaa">railway.app</a> → Sign up (free)<br>
+        2. Click <strong style="color:#dde8f0">New Project → Deploy from GitHub repo</strong><br>
+        3. Select <code style="background:#050810;padding:1px 5px;border-radius:3px;color:#6ababb">higgsfield-proxy</code><br>
+        4. Railway auto-detects Node.js and deploys ✓
+      </div>
+
+      <div style="background:#0d1520;border:1px solid #1a2a3a;border-radius:8px;padding:14px;margin-bottom:16px">
+        <div style="font-size:11px;font-weight:800;color:#d4a017;margin-bottom:8px">STEP 3 — Environment Variables</div>
+        In Railway → your project → <strong style="color:#dde8f0">Variables</strong> tab:<br><br>
+        <code style="background:#050810;display:block;padding:8px 10px;border-radius:5px;color:#6ababb;margin:4px 0">HF_KEY = your-higgsfield-api-key</code>
+        <code style="background:#050810;display:block;padding:8px 10px;border-radius:5px;color:#6ababb;margin:4px 0">HF_SECRET = your-higgsfield-secret</code>
+        <br>Click <strong style="color:#dde8f0">Deploy</strong> after adding variables
+      </div>
+
+      <div style="background:#0d1520;border:1px solid #1a2a3a;border-radius:8px;padding:14px;margin-bottom:16px">
+        <div style="font-size:11px;font-weight:800;color:#d4a017;margin-bottom:8px">STEP 4 — Get your Proxy URL</div>
+        Railway → project → <strong style="color:#dde8f0">Settings → Domains</strong><br>
+        Copy URL, looks like:<br>
+        <code style="background:#050810;display:block;padding:8px 10px;border-radius:5px;color:#6ababb;margin:6px 0">https://higgsfield-proxy-production.up.railway.app</code>
+      </div>
+
+      <div style="background:#0d1520;border:1px solid #1a2a3a;border-radius:8px;padding:14px">
+        <div style="font-size:11px;font-weight:800;color:#d4a017;margin-bottom:8px">STEP 5 — Paste into Scanner</div>
+        Paste the Railway URL into the <strong style="color:#dde8f0">Proxy URL</strong> field above → Save.<br>
+        The <strong style="color:#d4a017">Send to Higgsfield</strong> button now works end-to-end. ✓<br><br>
+        <span style="color:#5a8a5a;font-size:12px">💰 Cost: Railway Hobby ~$5/month. Proxy uses minimal resources.</span>
+      </div>
+    </div>
+    <button onclick="document.getElementById('proxyModal').style.display='none'" style="width:100%;margin-top:18px;background:#d4a017;color:#07090f;font-weight:900;font-size:13px;border:none;border-radius:8px;padding:11px;cursor:pointer">Got it ✓</button>
+  </div>
+</div>
+
+<script>
+let sport='Football',cat='viral_moment',geo='Both';
+let hfKey='',hfSecret='',proxyUrl='';
+let pickedEvent=null,lastPkg=null;
+
+function saveConfig(){
+  hfKey=document.getElementById('hfKey').value.trim();
+  hfSecret=document.getElementById('hfSecret').value.trim();
+  proxyUrl=document.getElementById('proxyUrl').value.trim().replace(/\/$/,'');
+  const b=document.getElementById('cfgBadge');
+  if(hfKey&&hfSecret){
+    b.className='cfg-badge ok';
+    b.textContent=proxyUrl?'✓ Keys + Proxy saved':'✓ Keys saved (no proxy yet)';
+    setTimeout(()=>b.className='cfg-badge',4000);
+  } else {
+    b.className='cfg-badge err';
+    b.textContent='Enter API key and secret';
+  }
+}
+
+function showProxyHelp(){document.getElementById('proxyModal').style.display='block'}
+function setSport(el){document.querySelectorAll('.sport-btn').forEach(b=>b.classList.remove('active'));el.classList.add('active');sport=el.dataset.sport}
+function setCat(el){document.querySelectorAll('.cat-btn').forEach(b=>b.classList.remove('active'));el.classList.add('active');cat=el.dataset.cat}
+function setGeo(el){document.querySelectorAll('.geo-btn').forEach(b=>b.classList.remove('active'));el.classList.add('active');geo=el.dataset.geo}
+function setPhase(n){['ph1','ph2','ph3','ph4'].forEach((id,i)=>{const el=document.getElementById(id);el.classList.remove('active','done');if(i+1<n)el.classList.add('done');else if(i+1===n)el.classList.add('active')})}
+function setStatus(t,live=true){document.getElementById('statusText').textContent=t;document.getElementById('statusDot').className='dot'+(live?' live':'')}
+function sleep(ms){return new Promise(r=>setTimeout(r,ms))}
+
+async function startScan(){
+  document.getElementById('scanBtn').disabled=true;
+  setPhase(1);setStatus('Scanning...');
+  const logs=[
+    {icon:'🌐',text:'Searching top '+sport+' content globally...'},
+    {icon:'📊',text:'Analysing virality signals...'},
+    {icon:'🎯',text:'Filtering: '+cat.replace(/_/g,' ')+'...'},
+    {icon:'✅',text:'Ranking by viral potential...'}
+  ];
+  document.getElementById('mainContent').innerHTML=`<div class="phase-log">${logs.map((l,i)=>`<div class="log-item" id="log${i}"><div class="log-icon">${l.icon}</div><div class="log-text">${l.text}</div></div>`).join('')}</div>`;
+  for(let i=0;i<logs.length;i++){
+    const el=document.getElementById('log'+i);
+    el.classList.add('active');el.innerHTML+=`<div class="log-spin"></div>`;
+    await sleep(850);
+    el.classList.remove('active');el.classList.add('done');
+    el.querySelector('.log-spin').outerHTML='<div class="log-check">✓</div>';
+  }
+  const today=new Date().toISOString().split('T')[0];
+  const prompt=`Search for the top 4 most viral or talked-about ${sport} events from the past 48 hours as of ${today}. Category focus: ${cat.replace(/_/g,' ')}. Geo: ${geo}.\n\nReturn ONLY a JSON array, no markdown:\n[{"rank":1,"category":"${cat}","title":"Short title max 8 words","description":"Full factual description min 40 words","viral_score":85,"why_viral":"One sentence emotional trigger"}]`;
+  try{
+    const res=await fetch(proxyUrl+'/claude',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model:'claude-sonnet-4-6',max_tokens:2000,tools:[{type:'web_search_20250305',name:'web_search'}],messages:[{role:'user',content:prompt}]})});
+    const data=await res.json();
+    const text=(data.content||[]).map(b=>b.text||'').join('');
+    let events;
+    try{const m=text.replace(/```json|```/g,'').match(/\[[\s\S]*\]/);events=JSON.parse(m?m[0]:text)}
+    catch(e){events=[{rank:1,category:cat,title:'No results parsed — retry',description:'Web search returned unstructured data. Please try again.',viral_score:0,why_viral:'N/A'}]}
+    renderEvents(events);
+  }catch(e){renderEvents([{rank:1,category:cat,title:'Search error',description:e.message,viral_score:0,why_viral:'N/A'}])}
+}
+
+function renderEvents(events){
+  setPhase(2);setStatus('Select an event');pickedEvent=null;
+  document.getElementById('mainContent').innerHTML=`
+    <div class="section-hd">Top ${sport} · ${cat.replace(/_/g,' ')} · Last 48h</div>
+    <div class="events-grid" id="evGrid">${events.map((ev,i)=>`
+      <div class="event-card" id="evc${i}" onclick="pickEvent(${i})">
+        <div class="ev-rank">#${ev.rank||i+1}</div>
+        <div class="ev-cat">${(ev.category||cat).replace(/_/g,' ')}</div>
+        <div class="ev-title">${ev.title}</div>
+        <div class="ev-meta">${ev.why_viral||''}</div>
+        <div class="ev-score"><div class="ev-bar"><div class="ev-fill" style="width:${ev.viral_score||0}%"></div></div><div class="ev-num">${ev.viral_score||'—'}</div></div>
+      </div>`).join('')}
+    </div>
+    <button class="gen-btn" id="genPkgBtn" onclick="generatePackage()" disabled>⚡ Generate Content Package</button>
+    <div id="packageOut"></div>`;
+  window._events=events;
+  document.getElementById('scanBtn').disabled=false;
+}
+
+function pickEvent(i){
+  document.querySelectorAll('.event-card').forEach(c=>c.classList.remove('picked'));
+  document.getElementById('evc'+i).classList.add('picked');
+  pickedEvent=window._events[i];
+  document.getElementById('genPkgBtn').disabled=false;
+}
+
+async function generatePackage(){
+  if(!pickedEvent)return;
+  document.getElementById('genPkgBtn').disabled=true;
+  setPhase(3);setStatus('Generating...');
+  const today=new Date().toISOString().split('T')[0].replace(/-/g,'');
+  document.getElementById('packageOut').innerHTML=`<div class="phase-log" style="max-width:100%">
+    <div class="log-item active" id="pl0"><div class="log-icon">✍️</div><div class="log-text">Writing hooks & voiceovers EN + ID...</div><div class="log-spin"></div></div>
+    <div class="log-item" id="pl1"><div class="log-icon">🎬</div><div class="log-text">Building Higgsfield scene prompts...</div></div>
+    <div class="log-item" id="pl2"><div class="log-icon">📱</div><div class="log-text">Crafting social copy all platforms...</div></div>
+  </div>`;
+  const sys=`You are a senior sports content strategist. Return ONLY valid JSON, no markdown, no preamble.\n\nSchema: {"content_id":"CF-${sport.toUpperCase()}-${today}-${cat.toUpperCase()}","generated_at":"${new Date().toISOString()}","category":"${cat}","sport":"${sport}","scoring":{"viral_potential":0,"emotional_impact":0,"engagement_probability":0,"shareability":0,"composite":0,"priority":"IMMEDIATE","reasoning":"2 sentences"},"creative":{"hook":{"en":"max 10 words","id":"Bahasa Indonesia"},"viral_reason":"2-3 sentences","voiceover":{"en":"60-80 words no gambling first sentence","id":"60-80 words natural Indonesian"},"on_screen_captions":["S1 4 WORDS","S2 4 WORDS","S3 4 WORDS","S4 5 WORDS"],"cta":{"en":"max 15 words","id":"Bahasa Indonesia"}},"higgsfield":{"total_duration_sec":45,"aspect_ratio":"9:16","resolution":"1080x1920","music":{"mood":"epic_sports","volume":0.65,"fade_out_sec":3},"scenes":[{"scene_index":1,"label":"hook","timecode":"0-5s","duration_sec":5,"model":"higgsfield-ai/dop/preview","prompt":"min 25 words cinematic","motion":"slow_zoom_in","camera":"extreme_closeup","fps":30,"caption_overlay":"S1","music_sting":true,"no_gambling_rule":true},{"scene_index":2,"label":"context","timecode":"5-15s","duration_sec":10,"model":"higgsfield-ai/dop/preview","prompt":"scene context","motion":"tracking_shot","camera":"wide_establishing","fps":24,"caption_overlay":"S2","music_sting":false,"no_gambling_rule":true},{"scene_index":3,"label":"build","timecode":"15-25s","duration_sec":10,"model":"higgsfield-ai/dop/preview","prompt":"rising tension","motion":"fast_cut","camera":"extreme_closeup","fps":30,"caption_overlay":null,"music_sting":false,"no_gambling_rule":true},{"scene_index":4,"label":"climax","timecode":"25-35s","duration_sec":10,"model":"higgsfield-ai/dop/preview","prompt":"hero moment min 40 words ultra detailed","motion":"ultra_slow_motion","camera":"low_angle","fps":120,"caption_overlay":"S3","music_sting":true,"no_gambling_rule":true},{"scene_index":5,"label":"emotion","timecode":"35-42s","duration_sec":7,"model":"higgsfield-ai/dop/preview","prompt":"aftermath emotion faces","motion":"slow_zoom_face","camera":"extreme_closeup","fps":30,"caption_overlay":null,"music_sting":false,"no_gambling_rule":true},{"scene_index":6,"label":"cta","timecode":"42-45s","duration_sec":3,"model":"higgsfield-ai/dop/preview","prompt":"Clean dark brand card bold white text centered 9:16","motion":"static","camera":"graphic_card","fps":30,"caption_overlay":"S4","music_sting":true,"no_gambling_rule":false}]},"social_copy":{"instagram":{"en":"hook 2-3 paragraphs question 5-8 hashtags","id":"Bahasa Indonesia"},"telegram":{"en":"emoji opener 3-5 lines","id":"Bahasa Indonesia"},"twitter":{"en":"240 chars 2-3 hashtags","id":"240 chars"}},"production_notes":{"time_to_publish_target_min":15,"smm_review_notes":"flags","b_roll_tags":["t1","t2","t3","t4"],"color_grade":"vibrant_saturated"}}`;
+  try{
+    await sleep(1100);
+    document.getElementById('pl0').classList.remove('active');document.getElementById('pl0').classList.add('done');document.getElementById('pl0').querySelector('.log-spin').outerHTML='<div class="log-check">✓</div>';
+    document.getElementById('pl1').classList.add('active');document.getElementById('pl1').innerHTML+=`<div class="log-spin"></div>`;
+    const res=await fetch(proxyUrl+'/claude',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model:'claude-sonnet-4-6',max_tokens:4000,system:sys,messages:[{role:'user',content:`EVENT: ${pickedEvent.description}\nSPORT: ${sport}\nCATEGORY: ${cat}\nGEO_FOCUS: ${geo}`}]})});
+    const data=await res.json();
+    await sleep(700);
+    document.getElementById('pl1').classList.remove('active');document.getElementById('pl1').classList.add('done');document.getElementById('pl1').querySelector('.log-spin').outerHTML='<div class="log-check">✓</div>';
+    document.getElementById('pl2').classList.add('active');document.getElementById('pl2').innerHTML+=`<div class="log-spin"></div>`;
+    const text=(data.content||[]).map(b=>b.text||'').join('');
+    let pkg;
+    try{const m=text.replace(/```json|```/g,'').match(/\{[\s\S]*\}/);pkg=JSON.parse(m?m[0]:text)}
+    catch(e){document.getElementById('packageOut').innerHTML=`<div style="color:#cc5050;padding:12px;background:#1a0808;border-radius:8px;font-size:12px">Parse error: ${e.message}</div>`;document.getElementById('genPkgBtn').disabled=false;return}
+    lastPkg=pkg;
+    await sleep(500);
+    document.getElementById('pl2').classList.remove('active');document.getElementById('pl2').classList.add('done');document.getElementById('pl2').querySelector('.log-spin').outerHTML='<div class="log-check">✓</div>';
+    await sleep(300);
+    setPhase(4);setStatus('Package ready',false);
+    renderPackage(pkg);
+    document.getElementById('genPkgBtn').disabled=false;
+  }catch(e){document.getElementById('packageOut').innerHTML=`<div style="color:#cc5050;font-size:12px;padding:12px">Error: ${e.message}</div>`;document.getElementById('genPkgBtn').disabled=false;setStatus('Error',false)}
+}
+
+function renderPackage(p){
+  const s=p.scoring,c=p.creative,sc=p.social_copy,pr=p.production_notes,scenes=p.higgsfield?.scenes||[];
+  document.getElementById('packageOut').innerHTML=`
+  <div class="out-wrap">
+    <div class="out-tabs">
+      <div class="otab active" onclick="switchOTab('scoring',this)">📊 Scoring</div>
+      <div class="otab" onclick="switchOTab('creative',this)">✍️ Creative</div>
+      <div class="otab" onclick="switchOTab('scenes',this)">🎬 Scenes + Send</div>
+      <div class="otab" onclick="switchOTab('social',this)">📱 Social</div>
+      <div class="otab" onclick="switchOTab('prod',this)">🔧 Production</div>
+      <div class="otab" onclick="switchOTab('json',this)">{ } JSON</div>
+    </div>
+
+    <div class="out-panel active" id="op-scoring">
+      <div class="sc-grid">${['viral_potential','emotional_impact','engagement_probability','shareability'].map(k=>`<div class="sc-card"><div class="sc-lbl">${k.replace(/_/g,' ')}</div><div class="sc-bar-bg"><div class="sc-bar" style="width:${s[k]}%"></div></div><div class="sc-num">${s[k]}</div></div>`).join('')}</div>
+      <div class="sc-card" style="display:flex;align-items:center;gap:14px;margin-bottom:10px">
+        <div><div class="sc-lbl">Composite</div><div style="font-size:32px;font-weight:900;color:#d4a017;line-height:1">${s.composite}</div></div>
+        <div style="flex:1"><div class="sc-bar-bg" style="height:6px"><div class="sc-bar" style="width:${s.composite}%;height:6px"></div></div><div style="margin-top:7px"><span class="pri-badge pri-${s.priority}">${s.priority}</span></div></div>
+      </div>
+      <div class="rbox">${s.reasoning}</div>
+    </div>
+
+    <div class="out-panel" id="op-creative">
+      <div class="subhd">Hook</div>
+      <div class="hook-card"><div class="hook-lang">EN</div><div class="hook-text">${c.hook?.en||''}</div></div>
+      <div class="hook-card" style="border-left-color:#4a8aaa"><div class="hook-lang" style="color:#4a8aaa">ID</div><div class="hook-text">${c.hook?.id||''}</div></div>
+      <div class="subhd">Why it goes viral</div>
+      <div class="rbox" style="margin-bottom:11px">${c.viral_reason||''}</div>
+      <div class="subhd">Voiceover</div>
+      <div class="vo-card"><div class="vo-lang">EN</div><div class="vo-text">${c.voiceover?.en||''}</div></div>
+      <div class="vo-card"><div class="vo-lang">ID</div><div class="vo-text">${c.voiceover?.id||''}</div></div>
+      <div class="subhd">Captions</div>
+      <div class="caps-row">${(c.on_screen_captions||[]).map((cap,i)=>`<div class="cap-pill">S${i+1}: ${cap}</div>`).join('')}</div>
+      <div class="subhd">CTA</div>
+      <div class="cta-grid">
+        <div class="cta-card"><div class="cta-lang">EN</div><div class="cta-text">${c.cta?.en||''}</div></div>
+        <div class="cta-card"><div class="cta-lang">ID</div><div class="cta-text">${c.cta?.id||''}</div></div>
+      </div>
+    </div>
+
+    <div class="out-panel" id="op-scenes">
+      <div style="display:flex;gap:5px;flex-wrap:wrap;margin-bottom:11px">
+        <div class="meta-tag">⏱ ${p.higgsfield?.total_duration_sec}s</div>
+        <div class="meta-tag">${p.higgsfield?.aspect_ratio} · ${p.higgsfield?.resolution}</div>
+        <div class="meta-tag">♫ ${p.higgsfield?.music?.mood?.replace(/_/g,' ')}</div>
+      </div>
+      ${scenes.map(sc=>`
+        <div class="scene-card">
+          <div class="sc-hdr"><div class="sc-idx">${sc.scene_index}</div><div class="sc-name">${sc.label}</div><div class="sc-tc">${sc.timecode}</div></div>
+          <div class="sc-meta">
+            <div class="meta-tag">${sc.model}</div>
+            <div class="meta-tag">${(sc.motion||'').replace(/_/g,' ')}</div>
+            <div class="meta-tag">${(sc.camera||'').replace(/_/g,' ')}</div>
+            <div class="meta-tag">${sc.fps}fps</div>
+            ${sc.music_sting?'<div class="meta-tag" style="color:#d4a017">♫ sting</div>':''}
+          </div>
+          ${sc.caption_overlay?`<div class="sc-cap">${sc.caption_overlay}</div>`:''}
+          <div class="sc-prompt">${sc.prompt}</div>
+        </div>`).join('')}
+
+      <div class="hf-panel">
+        <div class="hf-title">🎬 Send to Higgsfield API</div>
+        <div class="hf-row">
+          <span class="hf-lbl">Model</span>
+          <select class="hf-sel" id="hfModel">
+            <option value="higgsfield-ai/dop/preview">higgsfield-ai/dop/preview</option>
+            <option value="higgsfield-ai/dop/standard">higgsfield-ai/dop/standard</option>
+            <option value="bytedance/seedance/v1/pro/image-to-video">bytedance/seedance/v1/pro</option>
+            <option value="kling-video/v2.1/pro/image-to-video">kling-video/v2.1/pro</option>
+          </select>
+        </div>
+        <div class="subhd" style="margin-top:0">Select scenes to send</div>
+        <div class="hf-scene-list">${scenes.map(sc=>`
+          <div class="hf-scene-row sel" id="hfrow${sc.scene_index}" onclick="toggleScene(${sc.scene_index},this)">
+            <input type="checkbox" class="hf-check" id="hfsc${sc.scene_index}" checked onclick="event.stopPropagation();toggleScene(${sc.scene_index},document.getElementById('hfrow${sc.scene_index}'))">
+            <span class="hf-scene-lbl">Scene ${sc.scene_index} · <strong style="color:#8aaabb">${sc.label.toUpperCase()}</strong> — ${sc.prompt.slice(0,50)}…</span>
+            <span class="hf-scene-tc">${sc.timecode}</span>
+          </div>`).join('')}
+        </div>
+        <button class="hf-send-btn" id="hfSendBtn" onclick="sendToHiggsfield()">🚀 Send to Higgsfield</button>
+        <div id="jobList"></div>
+      </div>
+    </div>
+
+    <div class="out-panel" id="op-social">
+      <div class="plat-hd">📸 Instagram</div>
+      <div class="soc-grid"><div class="soc-card"><div class="soc-lang">EN</div><div class="soc-text">${sc?.instagram?.en||''}</div></div><div class="soc-card"><div class="soc-lang">ID</div><div class="soc-text">${sc?.instagram?.id||''}</div></div></div>
+      <div class="plat-hd">✈️ Telegram</div>
+      <div class="soc-grid"><div class="soc-card"><div class="soc-lang">EN</div><div class="soc-text">${sc?.telegram?.en||''}</div></div><div class="soc-card"><div class="soc-lang">ID</div><div class="soc-text">${sc?.telegram?.id||''}</div></div></div>
+      <div class="plat-hd">🐦 Twitter / X</div>
+      <div class="soc-grid"><div class="soc-card"><div class="soc-lang">EN</div><div class="soc-text">${sc?.twitter?.en||''}</div></div><div class="soc-card"><div class="soc-lang">ID</div><div class="soc-text">${sc?.twitter?.id||''}</div></div></div>
+    </div>
+
+    <div class="out-panel" id="op-prod">
+      <div class="prod-table">
+        <div class="prod-row"><div class="prod-k">Publish target</div><div class="prod-v" style="color:#4adb6a">⚡ ${pr?.time_to_publish_target_min} min</div></div>
+        <div class="prod-row"><div class="prod-k">Color grade</div><div class="prod-v">${(pr?.color_grade||'').replace(/_/g,' ')}</div></div>
+        <div class="prod-row"><div class="prod-k">Content ID</div><div class="prod-v" style="color:#d4a017;font-size:10px">${p.content_id}</div></div>
+      </div>
+      <div class="notes-card"><div class="notes-lbl">⚠️ SMM Review Notes</div><div class="notes-txt">${pr?.smm_review_notes||''}</div></div>
+      <div class="subhd">B-Roll Tags</div>
+      <div class="tags-row">${(pr?.b_roll_tags||[]).map(t=>`<div class="tag">#${t}</div>`).join('')}</div>
+    </div>
+
+    <div class="out-panel" id="op-json">
+      <button class="copy-btn" onclick="copyJSON()">⧉ Copy JSON</button>
+      <div class="json-wrap"><div class="json-out" id="jsonOut">${JSON.stringify(lastPkg,null,2).replace(/</g,'&lt;')}</div></div>
+    </div>
+  </div>`;
+}
+
+function toggleScene(idx,row){
+  const cb=document.getElementById('hfsc'+idx);
+  cb.checked=!cb.checked;
+  row.classList.toggle('sel',cb.checked);
+}
+
+async function sendToHiggsfield(){
+  if(!proxyUrl){
+    document.getElementById('jobList').innerHTML=`<div class="cors-note"><strong>⚠️ Proxy URL not set</strong>You need to deploy the proxy server first.<br><a href="#" onclick="showProxyHelp();return false;" style="color:#d4a017">Click here for step-by-step instructions →</a></div>`;
+    return;
+  }
+  if(!hfKey||!hfSecret){alert('Enter Higgsfield API Key and Secret at the top and click Save.');return}
+  if(!lastPkg)return;
+  const model=document.getElementById('hfModel').value;
+  const scenes=lastPkg.higgsfield?.scenes||[];
+  const selected=scenes.filter((_,i)=>{const cb=document.getElementById('hfsc'+(i+1));return cb&&cb.checked});
+  if(!selected.length){alert('Select at least one scene.');return}
+  document.getElementById('hfSendBtn').disabled=true;
+  document.getElementById('jobList').innerHTML=`
+    <div class="subhd" style="margin-top:14px">Generation Jobs</div>
+    <div class="job-list" id="jlist">${selected.map(sc=>`
+      <div class="job-row" id="job${sc.scene_index}">
+        <div class="job-scene">Scene ${sc.scene_index}</div>
+        <div class="job-stat q" id="jstat${sc.scene_index}">⏳ Queued</div>
+        <div id="jlink${sc.scene_index}" style="font-size:11px;color:#3a5a6a"></div>
+      </div>`).join('')}
+    </div>`;
+  for(const scene of selected){
+    await sendScene(scene,model);
+    await sleep(600);
+  }
+  document.getElementById('hfSendBtn').disabled=false;
+}
+
+async function sendScene(scene,model){
+  const st=document.getElementById('jstat'+scene.scene_index);
+  const lk=document.getElementById('jlink'+scene.scene_index);
+  st.className='job-stat p';
+  st.innerHTML=`<span style="display:inline-flex;align-items:center;gap:5px"><span class="jspin"></span>Sending…</span>`;
+  try{
+    const res=await fetch(proxyUrl+'/generate',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({model,prompt:scene.prompt,duration:scene.duration_sec<=5?5:scene.duration_sec<=10?10:scene.duration_sec,aspect_ratio:lastPkg.higgsfield?.aspect_ratio||'9:16'})
+    });
+    const data=await res.json();
+    if(res.ok){
+      const reqId=data.request_id||data.id||'submitted';
+      st.className='job-stat ok';st.textContent='✓ Submitted';
+      lk.innerHTML=`<span style="font-family:monospace;font-size:10px;color:#3a6a7a">ID: ${reqId}</span>`;
+      if(data.request_id)pollJob(scene.scene_index,data.request_id);
+    } else {
+      st.className='job-stat fail';st.textContent='✗ '+(data.error||data.message||res.status);
+    }
+  }catch(e){
+    st.className='job-stat fail';st.textContent='✗ '+e.message;
+  }
+}
+
+async function pollJob(idx,reqId){
+  const st=document.getElementById('jstat'+idx);
+  const lk=document.getElementById('jlink'+idx);
+  for(let i=0;i<36;i++){
+    await sleep(5000);
+    try{
+      const res=await fetch(proxyUrl+'/status/'+reqId);
+      const d=await res.json();
+      const status=d.status||d.state||'';
+      if(status==='completed'){
+        const url=d.output?.url||d.video_url||d.url||'';
+        st.className='job-stat ok';st.textContent='✓ Ready';
+        if(url)lk.innerHTML=`<a class="job-link" href="${url}" target="_blank">▶ Watch video</a>`;
+        return;
+      } else if(status==='failed'||status==='cancelled'){
+        st.className='job-stat fail';st.textContent='✗ '+status;return;
+      } else if(status==='in_progress'||status==='processing'){
+        st.className='job-stat p';st.innerHTML=`<span style="display:inline-flex;align-items:center;gap:5px"><span class="jspin"></span>Generating…</span>`;
+      }
+    }catch(e){break}
+  }
+}
+
+function switchOTab(name,el){
+  document.querySelectorAll('.otab').forEach(t=>t.classList.remove('active'));
+  el.classList.add('active');
+  document.querySelectorAll('.out-panel').forEach(p=>p.classList.remove('active'));
+  document.getElementById('op-'+name).classList.add('active');
+}
+function copyJSON(){
+  if(!lastPkg)return;
+  navigator.clipboard.writeText(JSON.stringify(lastPkg,null,2));
+  const b=document.querySelector('.copy-btn');b.textContent='✓ Copied!';setTimeout(()=>b.textContent='⧉ Copy JSON',2000);
+}
+</script>
+</body>
+</html>
