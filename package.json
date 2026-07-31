@@ -4,11 +4,13 @@
   "description": "CORS proxy for Higgsfield API",
   "main": "server.js",
   "scripts": {
-    "start": "node server.js"
+    "start": "node server.js",
+    "build": "apt-get install -y ffmpeg || true"
   },
   "dependencies": {
     "cors": "^2.8.5",
-    "express": "^4.18.2"
+    "express": "^4.18.2",
+    "fluent-ffmpeg": "^2.1.2"
   },
   "engines": {
     "node": ">=18"
