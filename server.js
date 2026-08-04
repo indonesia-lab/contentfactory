@@ -36,7 +36,7 @@ app.get('/sports_content_scanner_v3.html', (req, res) => {
 
 app.get('/health', (req, res) => {
   let ffmpeg = 'not found';
-  try { ffmpeg = execSync('"'+ffmpegPath+'"-version 2>&1').toString().split('\n')[0]; } catch(e) {}
+  try { ffmpeg = execSync('"'+ffmpegPath+'" -version 2>&1').toString().split('\n')[0]; } catch(e) { ffmpeg = ffmpegPath || 'error: '+e.message; }
   res.json({ status: 'ok', ffmpeg, files: fs.readdirSync(__dirname) });
 });
 
@@ -48,6 +48,7 @@ app.post('/claude', async (req, res) => {
       headers: {
         'x-api-key': ANTHROPIC_KEY,
         'anthropic-version': '2023-06-01',
+        'anthropic-beta': 'web-search-2025-03-05',
         'Content-Type': 'application/json'
       },
       body: JSON.stringify(req.body)
@@ -133,8 +134,8 @@ app.post('/generate-video', async (req, res) => {
   const { image_url, prompt, duration, aspect_ratio } = req.body;
   if (!HF_KEY || !HF_SECRET) return res.status(500).json({ error: 'HF_KEY and HF_SECRET not set' });
   if (!image_url) return res.status(400).json({ error: 'image_url required' });
-  try 
-  {const response = await fetch('https://platform.higgsfield.ai/higgsfield-ai/dop/standard', {
+  try {
+    const response = await fetch('https://platform.higgsfield.ai/higgsfield-ai/dop/turbo', {
       method: 'POST',
       headers: {
         'Authorization': `Key ${HF_KEY}:${HF_SECRET}`,
