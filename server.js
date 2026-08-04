@@ -133,8 +133,8 @@ app.post('/generate-video', async (req, res) => {
   const { image_url, prompt, duration, aspect_ratio } = req.body;
   if (!HF_KEY || !HF_SECRET) return res.status(500).json({ error: 'HF_KEY and HF_SECRET not set' });
   if (!image_url) return res.status(400).json({ error: 'image_url required' });
-  try {
-    const response = await fetch('https://platform.higgsfield.ai/higgsfield-ai/dop/turbo', {
+  try 
+  {const response = await fetch('https://platform.higgsfield.ai/higgsfield-ai/dop/standard', {
       method: 'POST',
       headers: {
         'Authorization': `Key ${HF_KEY}:${HF_SECRET}`,
